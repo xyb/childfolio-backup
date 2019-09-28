@@ -1,0 +1,80 @@
+dist: trusty
+sudo: false
+
+language: c
+
+matrix:
+  fast_finish: true
+  include:
+    - os: linux
+      env:
+          BUILD=linux
+          CHANNEL=stable
+          CROSS=""
+
+    - os: linux
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            # For cross-compiling to Windows.
+            - binutils-mingw-w64-i686
+            - binutils-mingw-w64-x86-64
+            - gcc-mingw-w64-i686
+            - gcc-mingw-w64-x86-64
+            - g++-mingw-w64-i686
+            - g++-mingw-w64-x86-64
+            - mingw-w64
+      env:
+          BUILD=windows
+          CHANNEL=stable
+          CROSS="-d:crosswin"
+
+    - os: osx
+      compiler: clang
+      env:
+          BUILD=osx
+          CHANNEL=stable
+          CROSS=""
+
+before_install:
+
+  # Install nim
+  - export CHOOSENIM_NO_ANALYTICS=1
+  - curl https://nim-lang.org/choosenim/init.sh -sSf > init.sh
+  - sh init.sh -y
+  - export PATH=/Users/travis/.nimble/bin:$PATH
+  - export PATH=~/.nimble/bin:$PATH
+  - echo "export PATH=~/.nimble/bin:$PATH" >> ~/.profile
+  - choosenim $CHANNEL
+  - nimble install -y
+  - if [ $TRAVIS_OS_NAME == linux -a $BUILD == windows ]; then export CC=x86_64-w64-mingw32-gcc; fi
+
+script:
+  # - nimble test
+  - if [ $TRAVIS_OS_NAME == linux -a $BUILD == windows ]; then export GITHUB_RELEASE_FILENAME="./dist/childfolio-$BUILD-amd64.zip"; else export GITHUB_RELEASE_FILENAME="./dist/childfolio-$BUILD-amd64.tar.xz"; fi
+  - mkdir -p dist
+  # pcre64.dll/pcre32.dll must be distributed with the Windows executable
+  - if [ $TRAVIS_OS_NAME == linux -a $BUILD == windows ]; then curl -O https://nim-lang.org/download/dlls.zip; unzip dlls.zip; fi
+  - nimble build -y -d:release $CROSS
+  - if [ $TRAVIS_OS_NAME == linux -a $BUILD == windows ]; then strip childfolio pcre64.dll; else strip childfolio; fi
+  - mkdir -p childfolio-$BUILD-amd64
+  - cp childfolio childfolio-$BUILD-amd64
+  - if [ $TRAVIS_OS_NAME == linux -a $BUILD == windows ]; then cp pcre64.dll childfolio-$BUILD-amd64; fi
+  - if [ $TRAVIS_OS_NAME == linux -a $BUILD == windows ]; then zip -r9 $GITHUB_RELEASE_FILENAME childfolio-$BUILD-amd64; else tar cfJ $GITHUB_RELEASE_FILENAME childfolio-$BUILD-amd64; fi
+  - ls -al ./dist
+
+after_success:
+  - travis_retry curl -LO https://github.com/kdheepak/github-release/releases/download/v0.1.4/github-release-$TRAVIS_OS_NAME-amd64.tar.xz
+  - tar -xvf github-release-$TRAVIS_OS_NAME-amd64.tar.xz
+  - cp ./github-release-$TRAVIS_OS_NAME-amd64/github-release .
+  - chmod a+x github-release
+  - export TRAVIS_TAG_VERSION=${TRAVIS_TAG#"v"}
+  - if [ ! -z "$TRAVIS_TAG" ] && [ "$TRAVIS_PULL_REQUEST" == "false" ]; then ./github-release create --token "$GITHUB_TOKEN" --owner xieyanbo --repo childfolio-backup --tag "$TRAVIS_TAG"; fi
+  - if [ ! -z "$TRAVIS_TAG" ] && [ "$TRAVIS_PULL_REQUEST" == "false" ]; then ./github-release upload --token "$GITHUB_TOKEN" --owner xieyanbo --repo childfolio-backup --tag "$TRAVIS_TAG" --file "$GITHUB_RELEASE_FILENAME"; fi
+
+notifications:
+  email: false
+
+
