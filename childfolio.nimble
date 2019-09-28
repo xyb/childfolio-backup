@@ -12,10 +12,3 @@ bin           = @["childfolio"]
 
 requires "nim >= 0.20.0"
 requires "markdown >= 0.8.0"
-
-when defined(nimdistros):
-  import distros
-  if detectOs(Ubuntu):
-    foreignDep "libssl-dev"
-  else:
-    foreignDep "openssl"
