@@ -81,9 +81,7 @@ proc `%`(m: Moment): JsonNode =
     ("comments", %m.comments)]
 
 proc `%`(c: Config): JsonNode =
-  echo "account ", c.account
   result = %[("account", %c.account)]
-  echo "config ", result
 
 proc decodeEscapedUnicode(str: string): string =
   ## Decode Unicode escape sequences.
@@ -306,8 +304,22 @@ proc dumpMoments(moments: seq[Moment]) =
   let htmlFilename = joinPath(dataDir, "moments.html")
   var htmlFile = open(htmlFilename, fmWrite)
   defer: htmlFile.close()
-  let html = markdown(content)
+  let body = markdown(content)
   echo "保存孩子故事 $1 ..." % [htmlFilename]
+  let html = """<!DOCTYPE html>
+<html lang="en-US">
+<head>
+<title>时光迹备份</title>
+<meta charset="utf-8">
+<meta name="Description" content="时光迹备份。Childfolio backup. https://github.com/xyb/childfolio-backup">
+<meta name="author" content="Xie Yanbo">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+{body}
+</body>
+</html>
+""".fmt
   htmlFile.write(html)
   let uri = "file://" & htmlFilename
   openDefaultBrowser uri
@@ -349,6 +361,7 @@ proc loadConfig(): Config =
 
 proc saveConfig(config: Config) =
   let path = joinPath(getConfigDir(), "config.json")
+  createDir(parentDir(path))
 
   let configFile = open(path, fmWrite)
   defer: configFile.close()
