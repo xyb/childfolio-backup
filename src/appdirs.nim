@@ -17,8 +17,8 @@ proc userLogDir*(appName, appAuthor, version: string = "",
 when defined(macosx):
   include appdirsmacosx
 
-elif defined(windows):
-  include appdirswindows
+#elif defined(windows):
+#  include appdirswindows
 
 elif defined(linux):
   include appdirsunix
