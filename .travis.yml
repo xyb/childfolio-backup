@@ -18,30 +18,30 @@ matrix:
           CHANNEL=stable
           CROSS=""
 
-    #- os: linux
-    #  env:
-    #      BUILD=linux
-    #      CHANNEL=stable
-    #      CROSS=""
+    - os: linux
+      env:
+          BUILD=linux
+          CHANNEL=stable
+          CROSS=""
 
-    #- os: linux
-    #  addons:
-    #    apt:
-    #      sources:
-    #        - ubuntu-toolchain-r-test
-    #      packages:
-    #        # For cross-compiling to Windows.
-    #        - binutils-mingw-w64-i686
-    #        - binutils-mingw-w64-x86-64
-    #        - gcc-mingw-w64-i686
-    #        - gcc-mingw-w64-x86-64
-    #        - g++-mingw-w64-i686
-    #        - g++-mingw-w64-x86-64
-    #        - mingw-w64
-    #  env:
-    #      BUILD=windows
-    #      CHANNEL=stable
-    #      CROSS="-d:crosswin"
+    - os: linux
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            # For cross-compiling to Windows.
+            - binutils-mingw-w64-i686
+            - binutils-mingw-w64-x86-64
+            - gcc-mingw-w64-i686
+            - gcc-mingw-w64-x86-64
+            - g++-mingw-w64-i686
+            - g++-mingw-w64-x86-64
+            - mingw-w64
+      env:
+          BUILD=windows
+          CHANNEL=stable
+          CROSS="-d:crosswin"
 
 install:
   - |
