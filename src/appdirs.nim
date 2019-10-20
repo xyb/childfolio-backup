@@ -1,8 +1,6 @@
 ## Utilities for determining application-specific dirs.
 ## Inprised by https://github.com/ActiveState/appdirs
 
-import os, system
-
 proc userDataDir*(appName, appAuthor, version: string = "",
     roaming: bool = false): string
   ## Full path to the user-specific data dir for this application.

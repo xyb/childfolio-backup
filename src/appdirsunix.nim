@@ -1,4 +1,4 @@
-import os, system
+import os, strutils, system
 
 proc userDir(baseDir, appName, appAuthor: string = "",
     version: string = ""): string =
@@ -27,9 +27,8 @@ proc userLogDir(appName, appAuthor, version: string = "",
 
 when isMainModule:
   block userDirTests:
-    doAssert userDataDir("test_app", "test_company", "test_version",
-      ).endsWith(".local/share/test_app/test_version")
-    doAssert userConfigDir("app", "comp", "v1",
-      ).endsWith(".config/app/v1")
+    doAssert userDir("base", "app", "comp", "v1").endsWith("base/app/v1")
+    doAssert userDataDir("app", "company", "v1").endsWith(".local/share/app/v1")
+    doAssert userConfigDir("app", "comp", "v1").endsWith(".config/app/v1")
     doAssert userCacheDir("app", "comp", "v1").endsWith(".cache/app/v1")
     doAssert userLogDir("app", "comp", "v1").endsWith(".cache/app/v1/log")

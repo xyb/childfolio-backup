@@ -1,4 +1,6 @@
-import os, system
+import strutils, system
+
+# FIXME
 
 proc userDataDir(appName, appAuthor, version: string = "",
     roaming: bool = false): string =
@@ -19,9 +21,7 @@ proc userLogDir(appName, appAuthor, version: string = "",
 
 when isMainModule:
   block userDirTests:
-    doAssert userDataDir("test_app", "test_company", "test_version",
-      ).endsWith(".local/share/test_app/test_version")
-    doAssert userConfigDir("app", "comp", "v1",
-      ).endsWith(".config/app/v1")
+    doAssert userDataDir("app", "company", "v1").endsWith(".local/share/app/v1")
+    doAssert userConfigDir("app", "comp", "v1").endsWith(".config/app/v1")
     doAssert userCacheDir("app", "comp", "v1").endsWith(".cache/app/v1")
     doAssert userLogDir("app", "comp", "v1").endsWith(".cache/app/v1/log")
