@@ -1,6 +1,6 @@
 import
   browsers, httpclient, json, options, os, rdstdin, sequtils, strformat,
-  strutils, uri, terminal, times
+  strutils, unicode, uri, terminal, times
 
 import markdown
 import appdirs
@@ -100,6 +100,15 @@ proc decodeEscapedUnicode(str: string): string =
   except:
     raise
 
+proc headOfWideString(s: string, count: int): string =
+  ## Get first characters of a wide string
+  runnableExamples:
+    doAssert headOfWideString("你好，世界！", 3) == "你好，"
+    doAssert headOfWideString("hello", 2) == "he"
+
+  for (i, rune) in zip(toSeq(0 ..< count), toSeq(toRunes(s))):
+    result &= $rune
+
 proc normalTime(s: string): string =
   ## javascript's ISO 8601 time format to ISO 8601 UTC format
   runnableExamples:
@@ -176,18 +185,33 @@ proc getMoments(userId: int, accessCode: string): seq[Moment] =
     defer: rawFile.close()
     rawFile.write(node)
 
-    let captainNode = parseJson(node["momentCaptionExcerpt"].str)
-    let title = captainNode["title"].str
-    let content = captainNode["content"][0]["content"].str
+    var title, content: string
+    if node.hasKey("momentCaptionExcerpt"):
+      let captainNode = parseJson(node["momentCaptionExcerpt"].str)
+      title = captainNode["title"].str
+      content = captainNode["content"][0]["content"].str
+    else:
+      content = decodeEscapedUnicode(node["momentCaption"].str)
+      const titleLimit = 10
+      title = headOfWideString(content, titleLimit)
+      if len(content) > titleLimit:
+        title &= "..."
+
     let userNode = node["creatorInfo"]
     let username = userNode["lastName"].str & userNode["firstName"].str
 
     var video: Option[Media]
-    if node["videoURL"].str != "":
-      video = some(newMedia(node["videoURL"].str,
-                            node["videoThumbnailURL"].str))
+    let videoUrl = node["videoURL"].getStr()
+    if videoUrl != "":
+      video = some(newMedia(videoUrl, node["videoThumbnailURL"].str))
     else:
       video = none(Media)
+
+    var pictures: seq[Media] = @[]
+    if node.hasKey("pictureURLArr") and node["pictureURLArr"].kind == JArray:
+      pictures = zip(node["pictureURLArr"].elems,
+                     node["pictureThumbnailURLArr"].elems).mapIt(
+                       newMedia(it[0].str, it[1].str))
 
     let moment = Moment(
       id: id,
@@ -199,9 +223,7 @@ proc getMoments(userId: int, accessCode: string): seq[Moment] =
               nickName: decodeEscapedUnicode(it["nickName"].str))),
       className: node["className"].str,
       content: content,
-      pictures: zip(node["pictureURLArr"].elems,
-                    node["pictureThumbnailURLArr"].elems).mapIt(
-                      newMedia(it[0].str, it[1].str)),
+      pictures: pictures,
       video: video,
       audioAnnotationUrl: node["audioAnnotationURL"].getStr(""),
       likes: node["momentLikeList"].elems.mapIt(it[

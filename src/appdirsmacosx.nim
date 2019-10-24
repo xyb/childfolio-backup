@@ -1,4 +1,4 @@
-import os, strutils, system
+import os, system
 
 proc userDir(baseDir, appName, appAuthor, version: string = ""): string =
   result = expandTilde(baseDir)
