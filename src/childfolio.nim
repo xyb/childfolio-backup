@@ -1,10 +1,13 @@
 import
   browsers, httpclient, json, options, os, rdstdin, sequtils, strformat,
   strutils, unicode, uri, terminal, times
+import osproc
 
 import markdown
 import appdirs
 import keyring
+when defined(windows):
+  import wine
 
 when defined(profiler) or defined(memProfiler):
   import nimprof
@@ -292,18 +295,27 @@ proc downloadFile(url: string, subDir: string = "") =
     discard
 
   echo "下载 $1 ..." % [filename]
-  let f = open(path, fmWrite)
-  try:
-    response = client.get(url)
-    f.write(response.body)
-  finally:
-    # Do not defer close on writable file,
-    # otherwise setLastModificationTime fruitless
-    f.close()
+  when defined(windows):
+    # bypass binary content issue on windows https://forum.nim-lang.org/t/5228
+    let output = execProcess("powershell.exe",
+        args = ["-ExecutionPolicy", "ByPass", "-File",
+                "./download.ps1", url, path],
+        options = {poStdErrToStdOut})
+    if len(output) > 0:
+      echo output
+  else:
+    let f = open(path, fmWrite)
+    try:
+      response = client.get(url)
+      f.write(response.body)
+    finally:
+      # Do not defer close on writable file,
+      # otherwise setLastModificationTime fruitless
+      f.close()
 
-  let modified = response.headers["Last-Modified"]
-  let datetime = modified.parse(lastModifiedFormat, utc())
-  path.setLastModificationTime(datetime.toTime)
+    let modified = response.headers["Last-Modified"]
+    let datetime = modified.parse(lastModifiedFormat, utc())
+    path.setLastModificationTime(datetime.toTime)
 
 proc dumpMoments(moments: seq[Moment]) =
   ## Dump moments as markdown and html files
@@ -353,14 +365,20 @@ proc readLineFromStdinDefault(prompt: string, default: string = "",
   ## Return ``default`` if Enter pressed only,
   ## hide input characters if ``isPassword`` is ``true``.
   if isPassword:
+    var readPasswordProc: proc(x: string): string = readPasswordFromStdin
+    when defined(windows):
+      if detectWine():
+        # readPasswordFromStdin hang in wine
+        readPasswordProc = readLineFromStdin
+
     if default != "":
       echo "$1 [或者直接回车输入已保存密码]:" % [prompt]
-      result = readPasswordFromStdin("[***]> ")
+      result = readPasswordProc("[***]> ")
       if result == "":
         result = default
     else:
       echo "$1:" % [prompt]
-      result = readPasswordFromStdin("> ")
+      result = readPasswordProc("> ")
   else:
     if default != "":
       echo "$1 [或者直接回车输入上次账号]:" % [prompt]

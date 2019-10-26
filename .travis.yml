@@ -41,7 +41,7 @@ matrix:
       env:
           BUILD=windows
           CHANNEL=stable
-          CROSS="-d:crosswin"
+          CROSS="--cpu:amd64 -d:mingw"
 
 install:
   - |
@@ -63,10 +63,11 @@ script:
   - mkdir -p dist
   - nimble build -y -d:release $CROSS
   - if [ $TRAVIS_OS_NAME == linux -a $BUILD == windows ]; then export GITHUB_RELEASE_FILENAME="./dist/childfolio-$BUILD-amd64.zip"; else export GITHUB_RELEASE_FILENAME="./dist/childfolio-$BUILD-amd64.tgz"; fi
-  - if [ $TRAVIS_OS_NAME == linux -a $BUILD == windows ]; then strip childfolio pcre64.dll; else strip childfolio; fi
+  - strip childfolio
   - mkdir -p childfolio-$BUILD-amd64
   - cp childfolio childfolio-$BUILD-amd64
-  - if [ $TRAVIS_OS_NAME == linux -a $BUILD == windows ]; then cp pcre64.dll childfolio-$BUILD-amd64; fi
+  - if [ $TRAVIS_OS_NAME == linux -a $BUILD == windows ]; then mv childfolio-$BUILD-amd64/childfolio childfolio-$BUILD-amd64/childfolio.exe; fi
+  - if [ $TRAVIS_OS_NAME == linux -a $BUILD == windows ]; then cp pcre64.dll libeay64.dll ssleay64.dll src/download.ps1 childfolio-$BUILD-amd64; fi
   - if [ $TRAVIS_OS_NAME == linux -a $BUILD == windows ]; then zip -r9 $GITHUB_RELEASE_FILENAME childfolio-$BUILD-amd64; else tar cfz $GITHUB_RELEASE_FILENAME childfolio-$BUILD-amd64; fi
   - ls -al ./dist
 
