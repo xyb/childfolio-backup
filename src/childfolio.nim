@@ -256,6 +256,11 @@ proc formatMoment(moment: Moment): string =
   let pictures = join(moment.pictures.mapIt(
     "[![](thumbnails/$1)](pictures/$2)\L" % [getFilename(it.thumbnailUrl),
         getFilename(it.url)]))
+  var video = ""
+  if moment.video.isSome():
+    video = "[![](thumbnails/$1)](videos/$2)\L" % [
+        getFilename(moment.video.get.thumbnailUrl),
+        getFilename(moment.video.get.url)]
   let comments = join(moment.comments.mapIt(
     speechBalloon & it.author & ": " & it.content), "\L\L")
 
@@ -265,6 +270,8 @@ proc formatMoment(moment: Moment): string =
 {content}
 
 {pictures}
+
+{video}
 
 {redHeart}{likes}
 
@@ -330,6 +337,9 @@ proc dumpMoments(moments: seq[Moment]) =
     for pic in moment.pictures:
       downloadFile(pic.url, "pictures")
       downloadFile(pic.thumbnailUrl, "thumbnails")
+    if moment.video.isSome():
+      downloadFile(moment.video.get.url, "videos")
+      downloadFile(moment.video.get.thumbnailUrl, "thumbnails")
     let s = formatMoment(moment)
     f.write(s)
     content.add s
